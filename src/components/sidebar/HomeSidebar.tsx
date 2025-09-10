@@ -10,6 +10,7 @@ const HomeSidebar: React.FC = () => {
     { name: "Home", href: "/", icon: HomeIcon },
     { name: "Translate", href: "/home", icon: LanguageIcon },
     { name: "Load Test", href: "/home2", icon: LanguageIcon },
+    { name: "Moderation", href: "/moderation", icon: LanguageIcon },
   ];
 
   return (
