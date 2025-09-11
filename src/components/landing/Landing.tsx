@@ -1,6 +1,6 @@
-import Image from 'next/image';
-import { useRouter } from 'next/router';
-import React, { useEffect } from 'react';
+import Image from "next/image";
+import { useRouter } from "next/router";
+import React, { useEffect } from "react";
 
 type LandingPageProps = object;
 
@@ -9,7 +9,7 @@ const LandingPage: React.FC<LandingPageProps> = () => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.push('/home');
+      router.push("/home");
     }, 2000);
 
     return () => {

@@ -48,6 +48,10 @@ function computeBackoffMs(attempt: number): number {
   return base + jitter;
 }
 
+function isPendingLike(data: any): boolean {
+  return !!(data && (data.status === 'pending' || data.status === 'enqueued'));
+}
+
 // Text queue (proxied through Next.js API to avoid CORS)
 export async function enqueueText(
   text: string,
@@ -64,14 +68,16 @@ export async function enqueueText(
 
 export async function fetchTextResult(
   requestId: string,
-  timeoutMs: number = 5000
+  timeoutMs: number = 15000
 ): Promise<TextResult | null> {
   const res = await fetch(
-    `/api/queue/text/${encodeURIComponent(requestId)}?timeout_ms=${timeoutMs}`,
+    `/api/queue/text/${encodeURIComponent(requestId)}`,
     { method: "GET" }
   );
   if (res.status === 404) return null;
-  return parseOrThrow(res);
+  const data = await parseOrThrow(res);
+  if (isPendingLike(data)) return null;
+  return data as TextResult;
 }
 
 export async function waitForTextResult(
@@ -82,7 +88,7 @@ export async function waitForTextResult(
     maxAttempts?: number;
   } = {}
 ): Promise<TextResult> {
-  const { initialDelayMs = 0, timeoutMs = 5000, maxAttempts = 10 } = options;
+  const { initialDelayMs = 0, timeoutMs = 15000, maxAttempts = 8 } = options;
   if (initialDelayMs) await sleep(initialDelayMs);
   for (let attemptIndex = 0; attemptIndex < maxAttempts; attemptIndex++) {
     const result = await fetchTextResult(requestId, timeoutMs);
@@ -102,14 +108,16 @@ export async function enqueueImage(file: File): Promise<QueueEnqueueResponse> {
 
 export async function fetchImageResult(
   requestId: string,
-  timeoutMs: number = 5000
+  timeoutMs: number = 15000
 ): Promise<ImageResult | null> {
   const res = await fetch(
-    `/api/queue/image/${encodeURIComponent(requestId)}?timeout_ms=${timeoutMs}`,
+    `/api/queue/image/${encodeURIComponent(requestId)}`,
     { method: "GET" }
   );
   if (res.status === 404) return null;
-  return parseOrThrow(res);
+  const data = await parseOrThrow(res);
+  if (isPendingLike(data)) return null;
+  return data as ImageResult;
 }
 
 export async function waitForImageResult(
@@ -120,7 +128,7 @@ export async function waitForImageResult(
     maxAttempts?: number;
   } = {}
 ): Promise<ImageResult> {
-  const { initialDelayMs = 0, timeoutMs = 5000, maxAttempts = 10 } = options;
+  const { initialDelayMs = 0, timeoutMs = 15000, maxAttempts = 8 } = options;
   if (initialDelayMs) await sleep(initialDelayMs);
   for (let attemptIndex = 0; attemptIndex < maxAttempts; attemptIndex++) {
     const result = await fetchImageResult(requestId, timeoutMs);
@@ -138,14 +146,16 @@ export async function enqueueHealth(): Promise<QueueEnqueueResponse> {
 
 export async function fetchHealthResult(
   requestId: string,
-  timeoutMs: number = 5000
+  timeoutMs: number = 15000
 ): Promise<any | null> {
   const res = await fetch(
-    `/api/queue/health/${encodeURIComponent(requestId)}?timeout_ms=${timeoutMs}`,
+    `/api/queue/health/${encodeURIComponent(requestId)}`,
     { method: "GET" }
   );
   if (res.status === 404) return null;
-  return parseOrThrow(res);
+  const data = await parseOrThrow(res);
+  if (isPendingLike(data)) return null;
+  return data as any;
 }
 
 export async function waitForHealthResult(
@@ -156,7 +166,7 @@ export async function waitForHealthResult(
     maxAttempts?: number;
   } = {}
 ): Promise<any> {
-  const { initialDelayMs = 0, timeoutMs = 5000, maxAttempts = 10 } = options;
+  const { initialDelayMs = 0, timeoutMs = 15000, maxAttempts = 8 } = options;
   if (initialDelayMs) await sleep(initialDelayMs);
   for (let attemptIndex = 0; attemptIndex < maxAttempts; attemptIndex++) {
     const result = await fetchHealthResult(requestId, timeoutMs);
@@ -174,14 +184,16 @@ export async function enqueueConfig(): Promise<QueueEnqueueResponse> {
 
 export async function fetchConfigResult(
   requestId: string,
-  timeoutMs: number = 5000
+  timeoutMs: number = 15000
 ): Promise<any | null> {
   const res = await fetch(
-    `/api/queue/config/${encodeURIComponent(requestId)}?timeout_ms=${timeoutMs}`,
+    `/api/queue/config/${encodeURIComponent(requestId)}`,
     { method: "GET" }
   );
   if (res.status === 404) return null;
-  return parseOrThrow(res);
+  const data = await parseOrThrow(res);
+  if (isPendingLike(data)) return null;
+  return data as any;
 }
 
 export async function waitForConfigResult(
@@ -192,7 +204,7 @@ export async function waitForConfigResult(
     maxAttempts?: number;
   } = {}
 ): Promise<any> {
-  const { initialDelayMs = 0, timeoutMs = 5000, maxAttempts = 10 } = options;
+  const { initialDelayMs = 0, timeoutMs = 15000, maxAttempts = 8 } = options;
   if (initialDelayMs) await sleep(initialDelayMs);
   for (let attemptIndex = 0; attemptIndex < maxAttempts; attemptIndex++) {
     const result = await fetchConfigResult(requestId, timeoutMs);

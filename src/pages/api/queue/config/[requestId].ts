@@ -8,9 +8,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 		return res.status(405).json({ message: 'Method Not Allowed' })
 	}
 	const { requestId } = req.query
-	const timeout_ms = req.query.timeout_ms || '5000'
 	try {
-		const upstream = await fetch(`${API_BASE}/v1/queue/config/${encodeURIComponent(String(requestId))}?timeout_ms=${timeout_ms}`)
+		const upstream = await fetch(`${API_BASE}/v1/queue/config/${encodeURIComponent(String(requestId))}`)
 		if (upstream.status === 404) {
 			return res.status(404).send('Not ready')
 		}

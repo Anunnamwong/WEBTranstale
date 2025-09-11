@@ -14,23 +14,29 @@ const HomeSidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="fixed sm:static inset-y-0 left-0 z-30 w-56 bg-white border-r shadow-sm">
-      <div className="h-16 flex items-center px-4 border-b">
-        <span className="font-semibold">Translator</span>
+    <aside className="fixed sm:static inset-y-0 left-0 z-30 w-60 bg-white border-r border-neutral-200">
+      <div className="h-16 flex items-center px-4 border-b border-neutral-200">
+        <span className="font-semibold tracking-tight text-neutral-900">
+          Project NextBase
+        </span>
       </div>
       <nav className="p-2">
-        {items.map((it) => (
-          <Link
-            key={it.name}
-            href={it.href}
-            className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm mb-1 transition-colors
-              ${router.pathname === it.href ? "bg-blue-50 text-blue-700" : "hover:bg-gray-50 text-gray-700"}
-            `}
-          >
-            <it.icon className="w-5 h-5" />
-            <span>{it.name}</span>
-          </Link>
-        ))}
+        {items.map((it) => {
+          const active = router.pathname === it.href;
+          return (
+            <Link
+              key={it.name}
+              href={it.href}
+              className={`group flex items-center gap-3 px-3 py-2 rounded-md text-sm mb-1 transition-colors ${active ? "bg-indigo-50 text-indigo-700" : "hover:bg-neutral-50 text-neutral-700"}`}
+            >
+              <it.icon className="w-5 h-5" />
+              <span className="flex-1">{it.name}</span>
+              {active ? (
+                <span className="h-2 w-2 rounded-full bg-indigo-600" />
+              ) : null}
+            </Link>
+          );
+        })}
       </nav>
     </aside>
   );

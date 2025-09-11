@@ -17,16 +17,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 	}
 	
 	try {
-		const form = formidable({})
-		const [fields, files] = await form.parse(req)
+		const form = formidable({ multiples: true, keepExtensions: true })
+		const parsed = await form.parse(req)
+		const fields = parsed[0]
+		const files = parsed[1] as formidable.Files
 		
-		if (!files.file || Array.isArray(files.file)) {
+		let fileEntry = (files as any).file as formidable.File | formidable.File[] | undefined
+		if (!fileEntry) {
 			return res.status(400).json({ message: 'No file provided' })
 		}
-
-		const file = files.file as formidable.File
-		if (!file.filepath) {
+		const file = Array.isArray(fileEntry) ? fileEntry[0] : fileEntry
+		if (!file || !file.filepath) {
 			return res.status(400).json({ message: 'Invalid file' })
+		}
+
+		const stats = fs.statSync(file.filepath)
+		if (!stats || stats.size <= 0) {
+			return res.status(400).json({ message: 'Empty file' })
 		}
 
 		const formData = new FormData()
