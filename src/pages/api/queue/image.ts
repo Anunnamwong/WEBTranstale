@@ -21,24 +21,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 		const parsed = await form.parse(req)
 		const files = parsed[1] as formidable.Files
 		
-		let fileEntry = (files as any).file as formidable.File | formidable.File[] | undefined
-		if (!fileEntry) {
+		let file: formidable.File | undefined
+		const anyFiles = Object.values(files || {}) as any[]
+		if (anyFiles.length > 0) {
+			const first = anyFiles[0]
+			file = Array.isArray(first) ? (first[0] as formidable.File) : (first as formidable.File)
+		}
+		if (!file) {
+			const fileEntry = (files as any)?.file as formidable.File | formidable.File[] | undefined
+			if (fileEntry) file = Array.isArray(fileEntry) ? fileEntry[0] : fileEntry
+		}
+		if (!file || !(file as any).filepath) {
 			return res.status(400).json({ message: 'No file provided' })
 		}
-		const file = Array.isArray(fileEntry) ? fileEntry[0] : fileEntry
-		if (!file || !file.filepath) {
-			return res.status(400).json({ message: 'Invalid file' })
-		}
 
-		const stats = fs.statSync(file.filepath)
+		const stats = fs.statSync((file as any).filepath)
 		if (!stats || stats.size <= 0) {
 			return res.status(400).json({ message: 'Empty file' })
 		}
 
 		const formData = new FormData()
-		const fileBuffer = fs.readFileSync(file.filepath)
+		const fileBuffer = fs.readFileSync((file as any).filepath)
 		const fileBlob = new Blob([fileBuffer], { type: (file as any).mimetype || 'application/octet-stream' })
-		formData.append('file', fileBlob, file.originalFilename || 'image.jpg')
+		formData.append('file', fileBlob, (file as any).originalFilename || 'image.jpg')
 
 		const lang = (req.query.lang as string) || 'en'
 		const headers: Record<string, string> = {}
