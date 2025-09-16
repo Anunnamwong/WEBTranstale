@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import formidable from 'formidable'
 import fs from 'fs'
 
-const API_BASE = process.env.NEXT_PUBLIC_MODERATION_API_BASE || 'http://localhost:5050'
+const IMAGE_API_BASE = process.env.IMAGE_API_BASE || 'http://94.232.251.234:5050'
 
 export const config = {
 	api: {
@@ -19,7 +19,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 	try {
 		const form = formidable({ multiples: true, keepExtensions: true })
 		const parsed = await form.parse(req)
-		const fields = parsed[0]
 		const files = parsed[1] as formidable.Files
 		
 		let fileEntry = (files as any).file as formidable.File | formidable.File[] | undefined
@@ -38,12 +37,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 		const formData = new FormData()
 		const fileBuffer = fs.readFileSync(file.filepath)
-		const fileBlob = new Blob([fileBuffer])
+		const fileBlob = new Blob([fileBuffer], { type: (file as any).mimetype || 'application/octet-stream' })
 		formData.append('file', fileBlob, file.originalFilename || 'image.jpg')
 
-		const upstream = await fetch(`${API_BASE}/v1/queue/image`, { 
+		const lang = (req.query.lang as string) || 'en'
+		const headers: Record<string, string> = {}
+		const auth = req.headers['authorization']
+		if (auth) headers['Authorization'] = Array.isArray(auth) ? auth[0] : auth
+
+		const upstream = await fetch(`${IMAGE_API_BASE}/v1/queue/image?lang=${encodeURIComponent(lang)}`, { 
 			method: 'POST',
-			body: formData
+			body: formData,
+			headers
 		})
 		
 		const text = await upstream.text()
