@@ -109,7 +109,7 @@ const ModerationClient: React.FC = () => {
   const [imageResult, setImageResult] = useState<ImageResult | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
-  const [imageLang, setImageLang] = useState<"en" | "th" | "ru">("en");
+  const [imageLang, setImageLang] = useState<"en" | "ru" | "th" | "auto">("th");
 
   const [healthLoading, setHealthLoading] = useState(false);
   const [healthResult, setHealthResult] = useState<any>(null);
@@ -194,9 +194,10 @@ const ModerationClient: React.FC = () => {
         });
       } catch {}
 
-      const { request_id } = await enqueueImage(fileToSend, {
-        lang: imageLang,
-      });
+      const { request_id } = await enqueueImage(
+        fileToSend,
+        imageLang === "auto" ? undefined : imageLang
+      );
       const result = await waitForImageResult(request_id, {
         timeoutMs: 15000,
         maxAttempts: 8,
@@ -627,15 +628,13 @@ const ModerationClient: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <select
                     value={imageLang}
-                    onChange={(e) =>
-                      setImageLang(e.target.value as "en" | "th" | "ru")
-                    }
+                    onChange={(e) => setImageLang(e.target.value as any)}
                     className="rounded-md border bg-white px-2.5 py-1.5 text-sm shadow-sm focus:outline-none border-neutral-300"
-                    aria-label="Image language"
                   >
-                    <option value="en">en</option>
                     <option value="th">th</option>
+                    <option value="en">en</option>
                     <option value="ru">ru</option>
+                    <option value="auto">auto</option>
                   </select>
                   <button
                     onClick={onModerateImage}
@@ -748,25 +747,72 @@ const ModerationClient: React.FC = () => {
               </div>
               {imageResult ? (
                 <div className="space-y-4">
-                  {imageResult.labels ? (
-                    <div className="space-y-1">
-                      {Object.entries(imageResult.labels)
-                        .slice(0, 20)
-                        .map(([name, value]) => (
+                  {(() => {
+                    const cat = (imageResult as any)?.labels?.category;
+                    const rsn = (imageResult as any)?.labels?.reason;
+                    if (typeof cat === "string" || typeof rsn === "string") {
+                      return (
+                        <div
+                          className="rounded-lg border bg-white"
+                          style={{ borderColor: cardBorder }}
+                        >
                           <div
-                            key={name}
-                            className="flex items-start justify-between gap-3 text-sm"
+                            className="border-b px-3 py-2 text-xs font-medium text-neutral-700"
+                            style={{ borderColor: cardBorder }}
                           >
-                            <span className="font-medium text-neutral-800 min-w-[90px]">
-                              {name}
-                            </span>
-                            <span className="flex-1 text-neutral-700 break-words">
-                              {String(value)}
-                            </span>
+                            Classification
                           </div>
-                        ))}
-                    </div>
-                  ) : null}
+                          <div className="p-4 space-y-2">
+                            {typeof cat === "string" ? (
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="inline-flex items-center rounded-full bg-indigo-50 text-indigo-700 px-2.5 py-0.5 text-xs font-medium border border-indigo-100">
+                                  category
+                                </span>
+                                <span className="font-medium text-neutral-900">
+                                  {cat}
+                                </span>
+                              </div>
+                            ) : null}
+                            {typeof rsn === "string" ? (
+                              <div className="text-sm text-neutral-700">
+                                <span className="inline-flex items-center rounded-full bg-neutral-100 text-neutral-700 px-2 py-0.5 text-[11px] font-medium border border-neutral-200 mr-2">
+                                  reason
+                                </span>
+                                {rsn}
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return imageResult.labels ? (
+                      <div className="space-y-2">
+                        {Object.entries(imageResult.labels)
+                          .sort((a, b) => (b[1] as number) - (a[1] as number))
+                          .slice(0, 10)
+                          .map(([name, score]) => (
+                            <div key={name} className="space-y-1">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="font-medium text-neutral-800">
+                                  {name}
+                                </span>
+                                <span className="tabular-nums text-neutral-500">
+                                  {formatPercent(score as number)}
+                                </span>
+                              </div>
+                              <div className="h-2 w-full overflow-hidden rounded-full bg-neutral-200">
+                                <div
+                                  className="h-2 rounded-full transition-all bg-indigo-600"
+                                  style={{
+                                    width: `${Math.min(100, Math.max(0, (score as number) * 100))}%`,
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    ) : null;
+                  })()}
 
                   <div
                     className="overflow-hidden rounded-lg border bg-neutral-50"
