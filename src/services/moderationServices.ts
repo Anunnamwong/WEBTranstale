@@ -1,6 +1,9 @@
 export const API_BASE: string =
   process.env.NEXT_PUBLIC_MODERATION_API_BASE || "http://localhost:5050";
 
+export const IMAGE_API_BASE: string =
+  process.env.NEXT_PUBLIC_IMAGE_API_BASE || "http://94.232.251.234:5050";
+
 export type QueueEnqueueResponse = { request_id: string; status: "enqueued" };
 
 // Text moderation types
