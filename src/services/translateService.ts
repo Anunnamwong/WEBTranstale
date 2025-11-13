@@ -102,4 +102,90 @@ export async function getTranslateStatus(jobId: string) {
   return data as any;
 }
 
+// Queue-based translation API
+export type QueueTranslateRequest = {
+  q: string | string[];
+  source: 'auto' | 'en' | 'ru' | 'th';
+  target: 'en' | 'ru' | 'th';
+  format?: 'text' | 'html';
+  alternatives?: number;
+};
+
+export type QueueTranslateResponse = {
+  request_id: string;
+  status: 'enqueued' | 'pending' | 'completed' | 'failed';
+  message?: string;
+  translatedText?: string | string[];
+  success?: boolean;
+  error?: string;
+  retry_after_ms?: number;
+};
+
+export async function queueTranslate(body: QueueTranslateRequest): Promise<QueueTranslateResponse> {
+  const { data } = await client.post<QueueTranslateResponse>('/queue/translate', body);
+  return data;
+}
+
+export async function getQueueTranslateResult(requestId: string): Promise<QueueTranslateResponse> {
+  try {
+    const { data } = await client.get<QueueTranslateResponse>(`/queue/translate/${requestId}`);
+    return data;
+  } catch (error: any) {
+    // If 404, return pending status (not ready yet)
+    if (error?.response?.status === 404) {
+      return {
+        request_id: requestId,
+        status: 'pending',
+        success: false,
+      };
+    }
+    throw error;
+  }
+}
+
+// Helper function to poll for translation result
+export async function pollTranslationResult(
+  requestId: string,
+  options?: {
+    maxAttempts?: number;
+    intervalMs?: number;
+    timeoutMs?: number;
+  }
+): Promise<QueueTranslateResponse> {
+  const maxAttempts = options?.maxAttempts || 60; // Default 60 attempts
+  const intervalMs = options?.intervalMs || 1000; // Default 1 second
+  const timeoutMs = options?.timeoutMs || 60000; // Default 60 seconds
+  const startTime = Date.now();
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    // Check timeout
+    if (Date.now() - startTime > timeoutMs) {
+      throw new Error('Translation polling timeout');
+    }
+
+    try {
+      const result = await getQueueTranslateResult(requestId);
+
+      // If completed or failed, return immediately
+      if (result.status === 'completed' || result.status === 'failed') {
+        return result;
+      }
+
+      // If still pending or enqueued, wait and retry
+      if (result.status === 'pending' || result.status === 'enqueued') {
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
+        continue;
+      }
+
+      // Unknown status, return as is
+      return result;
+    } catch (error: any) {
+      // Other errors, throw (404 is already handled in getQueueTranslateResult)
+      throw error;
+    }
+  }
+
+  throw new Error('Translation polling exceeded max attempts');
+}
+
 

@@ -5,6 +5,8 @@ import {
   translateLongText,
   detectLanguage,
   getLanguages,
+  queueTranslate,
+  pollTranslationResult,
   type Language,
 } from "@/services/translateService";
 
@@ -123,27 +125,38 @@ const HomePage = () => {
     setTranslatedText("");
     try {
       const t0 = performance.now();
-      const isLong = sourceText.length > 3000;
-      if (isLong) {
-        const out = await translateLongText(
-          sourceText,
-          sourceLang as any,
-          targetLang
-        );
-        setTranslatedText(out);
-      } else {
-        const res = await translate({
-          q: sourceText,
-          source: sourceLang as any,
-          target: targetLang,
-          format: "text",
-        });
-        const out =
-          typeof res.translatedText === "string"
-            ? res.translatedText
-            : res.translatedText?.[0] || "";
-        setTranslatedText(out);
+
+      // Use queue API for translation
+      const queueResponse = await queueTranslate({
+        q: sourceText,
+        source: sourceLang as any,
+        target: targetLang,
+        format: "text",
+      });
+
+      if (!queueResponse.request_id) {
+        throw new Error("Failed to queue translation request");
       }
+
+      // Poll for result
+      const result = await pollTranslationResult(queueResponse.request_id, {
+        maxAttempts: 120, // 2 minutes max (120 * 1s)
+        intervalMs: 1000, // Poll every 1 second
+        timeoutMs: 120000, // 2 minutes timeout
+      });
+
+      if (result.status === "completed" && result.success) {
+        const out =
+          typeof result.translatedText === "string"
+            ? result.translatedText
+            : result.translatedText?.[0] || "";
+        setTranslatedText(out);
+      } else if (result.status === "failed" || result.error) {
+        throw new Error(result.error || "Translation failed");
+      } else {
+        throw new Error("Translation status unknown");
+      }
+
       setLastDurationMs(Math.max(0, Math.round(performance.now() - t0)));
     } catch (e: any) {
       setError(e?.message || "Translate failed");
