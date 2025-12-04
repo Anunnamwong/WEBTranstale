@@ -82,24 +82,24 @@ const HomePage = () => {
 
     // ขั้นต่อไป: แปลง BBCode หลัก ๆ ให้เป็น HTML แบบง่าย ๆ
     const withBbcode = unescaped
-      .replace(/\[b\](.*?)\[\/b\]/gis, "<strong>$1</strong>")
-      .replace(/\[i\](.*?)\[\/i\]/gis, "<em>$1</em>")
-      .replace(/\[u\](.*?)\[\/u\]/gis, "<u>$1</u>")
+      .replace(/\[b\]([\s\S]*?)\[\/b\]/gi, "<strong>$1</strong>")
+      .replace(/\[i\]([\s\S]*?)\[\/i\]/gi, "<em>$1</em>")
+      .replace(/\[u\]([\s\S]*?)\[\/u\]/gi, "<u>$1</u>")
       // [url]link[/url]
       .replace(
-        /\[url\](https?:\/\/[^\s\[]*?)\[\/url\]/gis,
+        /\[url\](https?:\/\/[^\s\[]*?)\[\/url\]/gi,
         '<a href="$1" target="_blank" rel="noreferrer">$1</a>'
       )
       // [url=link]text[/url]
       .replace(
-        /\[url=(https?:\/\/[^\s\]]*?)\](.*?)\[\/url\]/gis,
+        /\[url=(https?:\/\/[^\s\]]*?)\]([\s\S]*?)\[\/url\]/gi,
         '<a href="$1" target="_blank" rel="noreferrer">$2</a>'
       );
 
     // แปลง pattern พิเศษ: __X<id>__textX<id>__ ให้ text ถูกไฮไลต์
     // เช่น: Who needs a portal - __Xf3ee8e045b__installs the portalX4984dddd83423d__
     const withSpecialMarkers = withBbcode.replace(
-      /__X([0-9a-fA-F]+)__(.*?)X\1__/gis,
+      /__X([0-9a-fA-F]+)__([\s\S]*?)X\1__/gi,
       '<span style="background-color:#fef3c7;padding:0 2px;border-radius:2px;">$2</span>'
     );
 
