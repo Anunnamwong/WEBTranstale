@@ -260,6 +260,15 @@ const HomePage = () => {
           </div>
         </div>
 
+        {translatedText && (
+          <div className="mt-6">
+            <h2 className="text-lg font-medium mb-2">Rendered preview</h2>
+            <pre className="w-full rounded-lg border border-gray-200 bg-white p-4 text-sm overflow-auto whitespace-pre-wrap">
+              {translatedText}
+            </pre>
+          </div>
+        )}
+
         {error && <div className="mt-4 text-sm text-red-600">{error}</div>}
       </div>
     </div>
