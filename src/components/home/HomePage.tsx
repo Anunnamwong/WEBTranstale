@@ -96,8 +96,15 @@ const HomePage = () => {
         '<a href="$1" target="_blank" rel="noreferrer">$2</a>'
       );
 
+    // แปลง pattern พิเศษ: __X<id>__textX<id>__ ให้ text ถูกไฮไลต์
+    // เช่น: Who needs a portal - __Xf3ee8e045b__installs the portalX4984dddd83423d__
+    const withSpecialMarkers = withBbcode.replace(
+      /__X([0-9a-fA-F]+)__(.*?)X\1__/gis,
+      '<span style="background-color:#fef3c7;padding:0 2px;border-radius:2px;">$2</span>'
+    );
+
     // ใช้ <pre> + whitespace-pre-wrap ฝั่ง JSX เพื่อรักษา newline/indent
-    return withBbcode;
+    return withSpecialMarkers;
   }, [translatedText]);
 
   const onSwap = () => {
