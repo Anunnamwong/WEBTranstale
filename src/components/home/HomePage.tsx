@@ -68,6 +68,38 @@ const HomePage = () => {
     );
   }, [sourceText, sourceLang, targetLang]);
 
+  // แปลง escape sequence แบบตัวอักษร และ BBCode ให้พร้อมแสดงผล
+  const renderedTranslatedHtml = useMemo(() => {
+    if (!translatedText) return "";
+    // ขั้นแรก: แกะ escape sequence พื้นฐาน
+    const unescaped = translatedText
+      .replace(/\\r\\n/g, "\n") // Windows newline
+      .replace(/\\r/g, "\n") // old Mac newline
+      .replace(/\\n/g, "\n") // Unix newline
+      .replace(/\\t/g, "\t") // tab
+      .replace(/\\"/g, '"') // escaped double quote -> "
+      .replace(/\\\\/g, "\\"); // escaped backslash -> \
+
+    // ขั้นต่อไป: แปลง BBCode หลัก ๆ ให้เป็น HTML แบบง่าย ๆ
+    const withBbcode = unescaped
+      .replace(/\[b\](.*?)\[\/b\]/gis, "<strong>$1</strong>")
+      .replace(/\[i\](.*?)\[\/i\]/gis, "<em>$1</em>")
+      .replace(/\[u\](.*?)\[\/u\]/gis, "<u>$1</u>")
+      // [url]link[/url]
+      .replace(
+        /\[url\](https?:\/\/[^\s\[]*?)\[\/url\]/gis,
+        '<a href="$1" target="_blank" rel="noreferrer">$1</a>'
+      )
+      // [url=link]text[/url]
+      .replace(
+        /\[url=(https?:\/\/[^\s\]]*?)\](.*?)\[\/url\]/gis,
+        '<a href="$1" target="_blank" rel="noreferrer">$2</a>'
+      );
+
+    // ใช้ <pre> + whitespace-pre-wrap ฝั่ง JSX เพื่อรักษา newline/indent
+    return withBbcode;
+  }, [translatedText]);
+
   const onSwap = () => {
     setError(null);
     setTranslatedText("");
@@ -260,12 +292,15 @@ const HomePage = () => {
           </div>
         </div>
 
-        {translatedText && (
+        {renderedTranslatedHtml && (
           <div className="mt-6">
             <h2 className="text-lg font-medium mb-2">Rendered preview</h2>
-            <pre className="w-full rounded-lg border border-gray-200 bg-white p-4 text-sm overflow-auto whitespace-pre-wrap">
-              {translatedText}
-            </pre>
+            <pre
+              className="w-full rounded-lg border border-gray-200 bg-white p-4 text-sm overflow-auto whitespace-pre-wrap"
+              // ข้อความจาก API น่าจะเป็น BBCode ปลอดภัยระดับหนึ่ง
+              // ถ้าต้องการ strict security เพิ่มเติม อาจต้อง sanitize HTML ก่อน
+              dangerouslySetInnerHTML={{ __html: renderedTranslatedHtml }}
+            />
           </div>
         )}
 
