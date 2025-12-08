@@ -26,6 +26,7 @@ const HomePage = () => {
   const [translatedText, setTranslatedText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [requestIdInput, setRequestIdInput] = useState("");
   const srcRef = useRef<HTMLTextAreaElement | null>(null);
   const outRef = useRef<HTMLTextAreaElement | null>(null);
   const [lastDurationMs, setLastDurationMs] = useState<number | null>(null);
@@ -181,11 +182,54 @@ const HomePage = () => {
       const result = await pollTranslationResult(queueResponse.request_id, {
         maxAttempts: 120, // 2 minutes max (120 * 2s)
         intervalMs: 2000, // Poll every 2 seconds
-        timeoutMs: 15000, // 2 minutes timeout
+        timeoutMs: 15000, // 15 seconds timeout
       });
 
       if (result.status === "completed") {
         // Check if we have translated text, regardless of success flag
+        const out =
+          typeof result.translatedText === "string"
+            ? result.translatedText
+            : result.translatedText?.[0] || "";
+
+        if (out) {
+          setTranslatedText(out);
+        } else if (result.success === false || result.error) {
+          throw new Error(
+            result.error || "Translation completed but no text returned"
+          );
+        } else {
+          throw new Error("Translation completed but no text available");
+        }
+      } else if (result.status === "failed" || result.error) {
+        throw new Error(result.error || "Translation failed");
+      } else {
+        throw new Error(`Translation status unknown: ${result.status}`);
+      }
+
+      setLastDurationMs(Math.max(0, Math.round(performance.now() - t0)));
+    } catch (e: any) {
+      setError(e?.message || "Translate failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onFetchById = async () => {
+    const trimmed = requestIdInput.trim();
+    if (!trimmed) return;
+    setLoading(true);
+    setError(null);
+    setTranslatedText("");
+    try {
+      const t0 = performance.now();
+      const result = await pollTranslationResult(trimmed, {
+        maxAttempts: 120,
+        intervalMs: 2000,
+        timeoutMs: 15000,
+      });
+
+      if (result.status === "completed") {
         const out =
           typeof result.translatedText === "string"
             ? result.translatedText
@@ -294,6 +338,22 @@ const HomePage = () => {
                   (client)
                 </span>
               )}
+            </div>
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              <input
+                className="flex-1 min-w-[200px] rounded-md border border-gray-300 px-3 py-2 text-sm"
+                placeholder="Enter existing request ID"
+                value={requestIdInput}
+                onChange={(e) => setRequestIdInput(e.target.value)}
+              />
+              <button
+                className="inline-flex items-center gap-2 rounded-md bg-gray-200 text-gray-800 text-sm px-4 py-2 disabled:opacity-50 hover:bg-gray-300"
+                onClick={onFetchById}
+                disabled={!requestIdInput.trim() || loading}
+                title="Fetch translation result by request ID"
+              >
+                Get by ID
+              </button>
             </div>
             <textarea
               ref={outRef}
