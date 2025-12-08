@@ -181,7 +181,7 @@ const HomePage = () => {
       const result = await pollTranslationResult(queueResponse.request_id, {
         maxAttempts: 120, // 2 minutes max (120 * 2s)
         intervalMs: 2000, // Poll every 2 seconds
-        timeoutMs: 120000, // 2 minutes timeout
+        timeoutMs: 15000, // 2 minutes timeout
       });
 
       if (result.status === "completed") {
