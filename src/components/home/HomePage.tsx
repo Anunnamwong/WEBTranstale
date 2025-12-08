@@ -179,8 +179,8 @@ const HomePage = () => {
 
       // Poll for result
       const result = await pollTranslationResult(queueResponse.request_id, {
-        maxAttempts: 12, // 2 minutes max (12 * 10s)
-        intervalMs: 10000, // Poll every 10 seconds
+        maxAttempts: 120, // 2 minutes max (120 * 1s)
+        intervalMs: 1000, // Poll every 1 second
         timeoutMs: 120000, // 2 minutes timeout
       });
 
