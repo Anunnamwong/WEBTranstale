@@ -179,21 +179,31 @@ const HomePage = () => {
 
       // Poll for result
       const result = await pollTranslationResult(queueResponse.request_id, {
-        maxAttempts: 120, // 2 minutes max (120 * 10s)
-        intervalMs: 10000, // Poll every 10 seconds
+        maxAttempts: 120, // 2 minutes max (120 * 2s)
+        intervalMs: 2000, // Poll every 2 seconds
         timeoutMs: 120000, // 2 minutes timeout
       });
 
-      if (result.status === "completed" && result.success) {
+      if (result.status === "completed") {
+        // Check if we have translated text, regardless of success flag
         const out =
           typeof result.translatedText === "string"
             ? result.translatedText
             : result.translatedText?.[0] || "";
-        setTranslatedText(out);
+
+        if (out) {
+          setTranslatedText(out);
+        } else if (result.success === false || result.error) {
+          throw new Error(
+            result.error || "Translation completed but no text returned"
+          );
+        } else {
+          throw new Error("Translation completed but no text available");
+        }
       } else if (result.status === "failed" || result.error) {
         throw new Error(result.error || "Translation failed");
       } else {
-        throw new Error("Translation status unknown");
+        throw new Error(`Translation status unknown: ${result.status}`);
       }
 
       setLastDurationMs(Math.max(0, Math.round(performance.now() - t0)));
