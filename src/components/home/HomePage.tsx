@@ -6,6 +6,7 @@ import {
   detectLanguage,
   getLanguages,
   queueTranslate,
+  queueLlmTranslate,
   pollTranslationResult,
   type Language,
 } from "@/services/translateService";
@@ -27,6 +28,7 @@ const HomePage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [requestIdInput, setRequestIdInput] = useState("");
+  const [useLlm, setUseLlm] = useState(false);
   const srcRef = useRef<HTMLTextAreaElement | null>(null);
   const outRef = useRef<HTMLTextAreaElement | null>(null);
   const [lastDurationMs, setLastDurationMs] = useState<number | null>(null);
@@ -166,23 +168,34 @@ const HomePage = () => {
     try {
       const t0 = performance.now();
 
-      // Use queue API for translation
-      const queueResponse = await queueTranslate({
-        q: sourceText,
-        source: sourceLang as any,
-        target: targetLang,
-        format: "text",
-      });
+      // Use queue API for translation (choose between translate or llm/translate)
+      const queueResponse = useLlm
+        ? await queueLlmTranslate({
+            q: sourceText,
+            source: sourceLang as any,
+            target: targetLang,
+            format: "text",
+          })
+        : await queueTranslate({
+            q: sourceText,
+            source: sourceLang as any,
+            target: targetLang,
+            format: "text",
+          });
 
       if (!queueResponse.request_id) {
         throw new Error("Failed to queue translation request");
       }
+
+      // Save request_id to input field for later retrieval
+      setRequestIdInput(queueResponse.request_id);
 
       // Poll for result
       const result = await pollTranslationResult(queueResponse.request_id, {
         maxAttempts: 120, // 2 minutes max (120 * 2s)
         intervalMs: 2000, // Poll every 2 seconds
         timeoutMs: 15000, // 15 seconds timeout
+        useLlm: useLlm,
       });
 
       if (result.status === "completed") {
@@ -227,6 +240,7 @@ const HomePage = () => {
         maxAttempts: 120,
         intervalMs: 2000,
         timeoutMs: 15000,
+        useLlm: useLlm,
       });
 
       if (result.status === "completed") {
@@ -262,6 +276,20 @@ const HomePage = () => {
     <div className="min-h-screen w-full bg-gray-50">
       <div className="mx-auto max-w-5xl px-4 py-8">
         <h1 className="text-2xl font-semibold mb-6">Mini Translator</h1>
+
+        <div className="mb-4 flex items-center gap-4">
+          <label className="flex items-center gap-2 text-sm">
+            <span className="font-medium">Translation API:</span>
+            <select
+              className="px-3 py-2 rounded-md border border-gray-300 text-sm"
+              value={useLlm ? "llm" : "standard"}
+              onChange={(e) => setUseLlm(e.target.value === "llm")}
+            >
+              <option value="standard">Standard (/queue/translate)</option>
+              <option value="llm">LLM (/queue/llm/translate)</option>
+            </select>
+          </label>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
           <div className="md:col-span-5 bg-white rounded-lg border p-4 flex flex-col">

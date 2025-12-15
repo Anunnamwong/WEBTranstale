@@ -143,6 +143,28 @@ export async function getQueueTranslateResult(requestId: string): Promise<QueueT
   }
 }
 
+export async function queueLlmTranslate(body: QueueTranslateRequest): Promise<QueueTranslateResponse> {
+  const { data } = await client.post<QueueTranslateResponse>('/queue/llm/translate', body);
+  return data;
+}
+
+export async function getQueueLlmTranslateResult(requestId: string): Promise<QueueTranslateResponse> {
+  try {
+    const { data } = await client.get<QueueTranslateResponse>(`/queue/llm/translate/${requestId}`);
+    return data;
+  } catch (error: any) {
+    // If 404, return pending status (not ready yet)
+    if (error?.response?.status === 404) {
+      return {
+        request_id: requestId,
+        status: 'pending',
+        success: false,
+      };
+    }
+    throw error;
+  }
+}
+
 // Helper function to poll for translation result
 export async function pollTranslationResult(
   requestId: string,
@@ -150,11 +172,13 @@ export async function pollTranslationResult(
     maxAttempts?: number;
     intervalMs?: number;
     timeoutMs?: number;
+    useLlm?: boolean;
   }
 ): Promise<QueueTranslateResponse> {
   const maxAttempts = options?.maxAttempts || 60; // Default 60 attempts
   const intervalMs = options?.intervalMs || 1000; // Default 1 second
   const timeoutMs = options?.timeoutMs || 60000; // Default 60 seconds
+  const useLlm = options?.useLlm || false;
   const startTime = Date.now();
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -164,7 +188,9 @@ export async function pollTranslationResult(
     }
 
     try {
-      const result = await getQueueTranslateResult(requestId);
+      const result = useLlm 
+        ? await getQueueLlmTranslateResult(requestId)
+        : await getQueueTranslateResult(requestId);
 
       // If completed or failed, return immediately
       if (result.status === 'completed' || result.status === 'failed') {
