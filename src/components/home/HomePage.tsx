@@ -9,6 +9,7 @@ import {
   queueLlmTranslate,
   pollTranslationResult,
   type Language,
+  type LlmModel,
 } from "@/services/translateService";
 
 type LangCode = "th" | "en" | "ru";
@@ -29,6 +30,9 @@ const HomePage = () => {
   const [error, setError] = useState<string | null>(null);
   const [requestIdInput, setRequestIdInput] = useState("");
   const [useLlm, setUseLlm] = useState(false);
+  const [llmModel, setLlmModel] = useState<LlmModel>("openai-gpt-oss-20b");
+  const [useCustomModel, setUseCustomModel] = useState(false);
+  const [customModel, setCustomModel] = useState("");
   const srcRef = useRef<HTMLTextAreaElement | null>(null);
   const outRef = useRef<HTMLTextAreaElement | null>(null);
   const [lastDurationMs, setLastDurationMs] = useState<number | null>(null);
@@ -174,13 +178,14 @@ const HomePage = () => {
             q: sourceText,
             source: sourceLang as any,
             target: targetLang,
-            format: "text",
+            model: (useCustomModel && customModel.trim()
+              ? customModel.trim()
+              : llmModel) as LlmModel,
           })
         : await queueTranslate({
             q: sourceText,
             source: sourceLang as any,
             target: targetLang,
-            format: "text",
           });
 
       if (!queueResponse.request_id) {
@@ -277,7 +282,7 @@ const HomePage = () => {
       <div className="mx-auto max-w-5xl px-4 py-8">
         <h1 className="text-2xl font-semibold mb-6">Mini Translator</h1>
 
-        <div className="mb-4 flex items-center gap-4">
+        <div className="mb-4 flex items-center gap-4 flex-wrap">
           <label className="flex items-center gap-2 text-sm">
             <span className="font-medium">Translation API:</span>
             <select
@@ -289,6 +294,54 @@ const HomePage = () => {
               <option value="llm">LLM (/queue/llm/translate)</option>
             </select>
           </label>
+          {useLlm && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-medium text-sm">Model:</span>
+              {!useCustomModel ? (
+                <>
+                  <select
+                    className="px-3 py-1.5 rounded-md border border-gray-300 text-sm"
+                    value={llmModel}
+                    onChange={(e) => {
+                      if (e.target.value === "custom") {
+                        setUseCustomModel(true);
+                      } else {
+                        setLlmModel(e.target.value as LlmModel);
+                      }
+                    }}
+                  >
+                    <option value="openai-gpt-oss-20b">
+                      openai-gpt-oss-20b
+                    </option>
+                    <option value="gpt-4o-mini">gpt-4o-mini</option>
+                    <option value="gpt-5-mini">gpt-5-mini</option>
+                    <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+                    <option value="custom">Custom...</option>
+                  </select>
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    className="px-3 py-1.5 rounded-md border border-gray-300 text-sm min-w-[200px]"
+                    placeholder="Enter custom model name"
+                    value={customModel}
+                    onChange={(e) => setCustomModel(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="px-3 py-1.5 rounded-md border border-gray-300 text-sm bg-white hover:bg-gray-50"
+                    onClick={() => {
+                      setUseCustomModel(false);
+                      setCustomModel("");
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">

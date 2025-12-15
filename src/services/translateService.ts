@@ -102,6 +102,13 @@ export async function getTranslateStatus(jobId: string) {
   return data as any;
 }
 
+// LLM Model options
+export type LlmModel = 
+  | 'openai-gpt-oss-20b'
+  | 'gpt-4o-mini'
+  | 'gpt-5-mini'
+  | 'gemini-2.5-pro';
+
 // Queue-based translation API
 export type QueueTranslateRequest = {
   q: string | string[];
@@ -109,6 +116,7 @@ export type QueueTranslateRequest = {
   target: 'en' | 'ru' | 'th';
   format?: 'text' | 'html';
   alternatives?: number;
+  model?: LlmModel; // For LLM translate only
 };
 
 export type QueueTranslateResponse = {
@@ -143,7 +151,9 @@ export async function getQueueTranslateResult(requestId: string): Promise<QueueT
   }
 }
 
-export async function queueLlmTranslate(body: QueueTranslateRequest): Promise<QueueTranslateResponse> {
+export async function queueLlmTranslate(
+  body: QueueTranslateRequest & { model?: LlmModel }
+): Promise<QueueTranslateResponse> {
   const { data } = await client.post<QueueTranslateResponse>('/queue/llm/translate', body);
   return data;
 }
