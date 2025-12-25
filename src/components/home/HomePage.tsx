@@ -34,7 +34,7 @@ const HomePage = () => {
   const [apiType, setApiType] = useState<"standard" | "llm" | "novita">(
     "standard"
   );
-  const [llmModel, setLlmModel] = useState<LlmModel>("openai-gpt-oss-20b");
+  const [llmModel, setLlmModel] = useState<LlmModel>("openai-gpt-oss-120b");
   const [novitaModel, setNovitaModel] = useState<NovitaModel>(
     "openai/gpt-oss-120b"
   );
@@ -334,6 +334,9 @@ const HomePage = () => {
                       }
                     }}
                   >
+                    <option value="openai-gpt-oss-120b">
+                      openai-gpt-oss-120b
+                    </option>
                     <option value="openai-gpt-oss-20b">
                       openai-gpt-oss-20b
                     </option>

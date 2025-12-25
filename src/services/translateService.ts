@@ -104,6 +104,7 @@ export async function getTranslateStatus(jobId: string) {
 
 // LLM Model options
 export type LlmModel = 
+  | 'openai-gpt-oss-120b'
   | 'openai-gpt-oss-20b'
   | 'gpt-4o-mini'
   | 'gpt-5-mini'
