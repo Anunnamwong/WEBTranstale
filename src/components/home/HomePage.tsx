@@ -11,6 +11,7 @@ import {
   pollTranslationResult,
   type Language,
   type LlmModel,
+  type NovitaModel,
 } from "@/services/translateService";
 
 type LangCode = "th" | "en" | "ru";
@@ -33,7 +34,10 @@ const HomePage = () => {
   const [apiType, setApiType] = useState<"standard" | "llm" | "novita">(
     "standard"
   );
-  const [llmModel, setLlmModel] = useState<LlmModel>("openai/gpt-oss-120b");
+  const [llmModel, setLlmModel] = useState<LlmModel>("openai-gpt-oss-20b");
+  const [novitaModel, setNovitaModel] = useState<NovitaModel>(
+    "openai/gpt-oss-120b"
+  );
   const [useCustomModel, setUseCustomModel] = useState(false);
   const [customModel, setCustomModel] = useState("");
   const srcRef = useRef<HTMLTextAreaElement | null>(null);
@@ -193,7 +197,7 @@ const HomePage = () => {
           target: targetLang,
           model: (useCustomModel && customModel.trim()
             ? customModel.trim()
-            : llmModel) as LlmModel,
+            : novitaModel) as NovitaModel,
         });
       } else {
         queueResponse = await queueTranslate({
@@ -314,7 +318,7 @@ const HomePage = () => {
               <option value="novita">Novita (/queue/novita/translate)</option>
             </select>
           </label>
-          {(apiType === "llm" || apiType === "novita") && (
+          {apiType === "llm" && (
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-medium text-sm">Model:</span>
               {!useCustomModel ? (
@@ -330,15 +334,57 @@ const HomePage = () => {
                       }
                     }}
                   >
-                    <option value="openai/gpt-oss-120b">
-                      openai/gpt-oss-120b
-                    </option>
                     <option value="openai-gpt-oss-20b">
                       openai-gpt-oss-20b
                     </option>
                     <option value="gpt-4o-mini">gpt-4o-mini</option>
                     <option value="gpt-5-mini">gpt-5-mini</option>
                     <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+                    <option value="custom">Custom...</option>
+                  </select>
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    className="px-3 py-1.5 rounded-md border border-gray-300 text-sm min-w-[200px]"
+                    placeholder="Enter custom model name"
+                    value={customModel}
+                    onChange={(e) => setCustomModel(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="px-3 py-1.5 rounded-md border border-gray-300 text-sm bg-white hover:bg-gray-50"
+                    onClick={() => {
+                      setUseCustomModel(false);
+                      setCustomModel("");
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+          {apiType === "novita" && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-medium text-sm">Model:</span>
+              {!useCustomModel ? (
+                <>
+                  <select
+                    className="px-3 py-1.5 rounded-md border border-gray-300 text-sm"
+                    value={novitaModel}
+                    onChange={(e) => {
+                      if (e.target.value === "custom") {
+                        setUseCustomModel(true);
+                      } else {
+                        setNovitaModel(e.target.value as NovitaModel);
+                      }
+                    }}
+                  >
+                    <option value="openai/gpt-oss-120b">
+                      openai/gpt-oss-120b
+                    </option>
                     <option value="custom">Custom...</option>
                   </select>
                 </>

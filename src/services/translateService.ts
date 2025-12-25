@@ -104,11 +104,14 @@ export async function getTranslateStatus(jobId: string) {
 
 // LLM Model options
 export type LlmModel = 
-  | 'openai/gpt-oss-120b'
   | 'openai-gpt-oss-20b'
   | 'gpt-4o-mini'
   | 'gpt-5-mini'
   | 'gemini-2.5-pro';
+
+// Novita Model options
+export type NovitaModel = 
+  | 'openai/gpt-oss-120b';
 
 // Queue-based translation API
 export type QueueTranslateRequest = {
@@ -117,7 +120,7 @@ export type QueueTranslateRequest = {
   target: 'en' | 'ru' | 'th';
   format?: 'text' | 'html';
   alternatives?: number;
-  model?: LlmModel; // For LLM translate only
+  model?: LlmModel | NovitaModel | string; // For LLM/Novita translate only
 };
 
 export type QueueTranslateResponse = {
@@ -177,7 +180,7 @@ export async function getQueueLlmTranslateResult(requestId: string): Promise<Que
 }
 
 export async function queueNovitaTranslate(
-  body: QueueTranslateRequest & { model?: LlmModel }
+  body: QueueTranslateRequest & { model?: NovitaModel | string }
 ): Promise<QueueTranslateResponse> {
   const { data } = await client.post<QueueTranslateResponse>('/queue/novita/translate', body);
   return data;
