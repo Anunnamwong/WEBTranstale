@@ -175,6 +175,30 @@ export async function getQueueLlmTranslateResult(requestId: string): Promise<Que
   }
 }
 
+export async function queueNovitaTranslate(
+  body: QueueTranslateRequest & { model?: LlmModel }
+): Promise<QueueTranslateResponse> {
+  const { data } = await client.post<QueueTranslateResponse>('/queue/novita/translate', body);
+  return data;
+}
+
+export async function getQueueNovitaTranslateResult(requestId: string): Promise<QueueTranslateResponse> {
+  try {
+    const { data } = await client.get<QueueTranslateResponse>(`/queue/novita/translate/${requestId}`);
+    return data;
+  } catch (error: any) {
+    // If 404, return pending status (not ready yet)
+    if (error?.response?.status === 404) {
+      return {
+        request_id: requestId,
+        status: 'pending',
+        success: false,
+      };
+    }
+    throw error;
+  }
+}
+
 // Helper function to poll for translation result
 export async function pollTranslationResult(
   requestId: string,
@@ -183,12 +207,14 @@ export async function pollTranslationResult(
     intervalMs?: number;
     timeoutMs?: number;
     useLlm?: boolean;
+    useNovita?: boolean;
   }
 ): Promise<QueueTranslateResponse> {
   const maxAttempts = options?.maxAttempts || 60; // Default 60 attempts
   const intervalMs = options?.intervalMs || 1000; // Default 1 second
   const timeoutMs = options?.timeoutMs || 60000; // Default 60 seconds
   const useLlm = options?.useLlm || false;
+  const useNovita = options?.useNovita || false;
   const startTime = Date.now();
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -198,9 +224,14 @@ export async function pollTranslationResult(
     }
 
     try {
-      const result = useLlm 
-        ? await getQueueLlmTranslateResult(requestId)
-        : await getQueueTranslateResult(requestId);
+      let result: QueueTranslateResponse;
+      if (useNovita) {
+        result = await getQueueNovitaTranslateResult(requestId);
+      } else if (useLlm) {
+        result = await getQueueLlmTranslateResult(requestId);
+      } else {
+        result = await getQueueTranslateResult(requestId);
+      }
 
       // If completed or failed, return immediately
       if (result.status === 'completed' || result.status === 'failed') {

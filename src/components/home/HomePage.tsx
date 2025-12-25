@@ -7,6 +7,7 @@ import {
   getLanguages,
   queueTranslate,
   queueLlmTranslate,
+  queueNovitaTranslate,
   pollTranslationResult,
   type Language,
   type LlmModel,
@@ -29,7 +30,9 @@ const HomePage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [requestIdInput, setRequestIdInput] = useState("");
-  const [useLlm, setUseLlm] = useState(false);
+  const [apiType, setApiType] = useState<"standard" | "llm" | "novita">(
+    "standard"
+  );
   const [llmModel, setLlmModel] = useState<LlmModel>("openai-gpt-oss-20b");
   const [useCustomModel, setUseCustomModel] = useState(false);
   const [customModel, setCustomModel] = useState("");
@@ -172,21 +175,33 @@ const HomePage = () => {
     try {
       const t0 = performance.now();
 
-      // Use queue API for translation (choose between translate or llm/translate)
-      const queueResponse = useLlm
-        ? await queueLlmTranslate({
-            q: sourceText,
-            source: sourceLang as any,
-            target: targetLang,
-            model: (useCustomModel && customModel.trim()
-              ? customModel.trim()
-              : llmModel) as LlmModel,
-          })
-        : await queueTranslate({
-            q: sourceText,
-            source: sourceLang as any,
-            target: targetLang,
-          });
+      // Use queue API for translation (choose between translate, llm/translate, or novita/translate)
+      let queueResponse;
+      if (apiType === "llm") {
+        queueResponse = await queueLlmTranslate({
+          q: sourceText,
+          source: sourceLang as any,
+          target: targetLang,
+          model: (useCustomModel && customModel.trim()
+            ? customModel.trim()
+            : llmModel) as LlmModel,
+        });
+      } else if (apiType === "novita") {
+        queueResponse = await queueNovitaTranslate({
+          q: sourceText,
+          source: sourceLang as any,
+          target: targetLang,
+          model: (useCustomModel && customModel.trim()
+            ? customModel.trim()
+            : llmModel) as LlmModel,
+        });
+      } else {
+        queueResponse = await queueTranslate({
+          q: sourceText,
+          source: sourceLang as any,
+          target: targetLang,
+        });
+      }
 
       if (!queueResponse.request_id) {
         throw new Error("Failed to queue translation request");
@@ -200,7 +215,8 @@ const HomePage = () => {
         maxAttempts: 120, // 2 minutes max (120 * 2s)
         intervalMs: 2000, // Poll every 2 seconds
         timeoutMs: 15000, // 15 seconds timeout
-        useLlm: useLlm,
+        useLlm: apiType === "llm",
+        useNovita: apiType === "novita",
       });
 
       if (result.status === "completed") {
@@ -245,7 +261,8 @@ const HomePage = () => {
         maxAttempts: 120,
         intervalMs: 2000,
         timeoutMs: 15000,
-        useLlm: useLlm,
+        useLlm: apiType === "llm",
+        useNovita: apiType === "novita",
       });
 
       if (result.status === "completed") {
@@ -287,14 +304,17 @@ const HomePage = () => {
             <span className="font-medium">Translation API:</span>
             <select
               className="px-3 py-2 rounded-md border border-gray-300 text-sm"
-              value={useLlm ? "llm" : "standard"}
-              onChange={(e) => setUseLlm(e.target.value === "llm")}
+              value={apiType}
+              onChange={(e) =>
+                setApiType(e.target.value as "standard" | "llm" | "novita")
+              }
             >
               <option value="standard">Standard (/queue/translate)</option>
               <option value="llm">LLM (/queue/llm/translate)</option>
+              <option value="novita">Novita (/queue/novita/translate)</option>
             </select>
           </label>
-          {useLlm && (
+          {(apiType === "llm" || apiType === "novita") && (
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-medium text-sm">Model:</span>
               {!useCustomModel ? (
