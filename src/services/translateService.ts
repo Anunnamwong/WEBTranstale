@@ -132,6 +132,12 @@ export type QueueTranslateResponse = {
   success?: boolean;
   error?: string;
   retry_after_ms?: number;
+  provider?: string;
+  timing?: {
+    total_processing_seconds?: number;
+    api_response_seconds?: number;
+    text_count?: number;
+  };
 };
 
 export async function queueTranslate(body: QueueTranslateRequest): Promise<QueueTranslateResponse> {

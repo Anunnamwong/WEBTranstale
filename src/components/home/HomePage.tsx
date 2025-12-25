@@ -43,6 +43,7 @@ const HomePage = () => {
   const srcRef = useRef<HTMLTextAreaElement | null>(null);
   const outRef = useRef<HTMLTextAreaElement | null>(null);
   const [lastDurationMs, setLastDurationMs] = useState<number | null>(null);
+  const [apiProvider, setApiProvider] = useState<string | null>(null);
 
   React.useEffect(() => {
     (async () => {
@@ -176,6 +177,7 @@ const HomePage = () => {
     setLoading(true);
     setError(null);
     setTranslatedText("");
+    setApiProvider(null);
     try {
       const t0 = performance.now();
 
@@ -245,7 +247,15 @@ const HomePage = () => {
         throw new Error(`Translation status unknown: ${result.status}`);
       }
 
-      setLastDurationMs(Math.max(0, Math.round(performance.now() - t0)));
+      // Store timing info if available
+      const apiResponseSeconds = result.timing?.api_response_seconds;
+      if (apiResponseSeconds != null) {
+        setLastDurationMs(Math.max(0, Math.round(apiResponseSeconds * 1000)));
+        setApiProvider(result.provider || null);
+      } else {
+        setLastDurationMs(Math.max(0, Math.round(performance.now() - t0)));
+        setApiProvider(null);
+      }
     } catch (e: any) {
       setError(e?.message || "Translate failed");
     } finally {
@@ -259,6 +269,7 @@ const HomePage = () => {
     setLoading(true);
     setError(null);
     setTranslatedText("");
+    setApiProvider(null);
     try {
       const t0 = performance.now();
       const result = await pollTranslationResult(trimmed, {
@@ -290,7 +301,15 @@ const HomePage = () => {
         throw new Error(`Translation status unknown: ${result.status}`);
       }
 
-      setLastDurationMs(Math.max(0, Math.round(performance.now() - t0)));
+      // Store timing info if available
+      const apiResponseSeconds = result.timing?.api_response_seconds;
+      if (apiResponseSeconds != null) {
+        setLastDurationMs(Math.max(0, Math.round(apiResponseSeconds * 1000)));
+        setApiProvider(result.provider || null);
+      } else {
+        setLastDurationMs(Math.max(0, Math.round(performance.now() - t0)));
+        setApiProvider(null);
+      }
     } catch (e: any) {
       setError(e?.message || "Translate failed");
     } finally {
@@ -488,7 +507,21 @@ const HomePage = () => {
                   {lastDurationMs >= 1000
                     ? `${(lastDurationMs / 1000).toFixed(1)}s`
                     : `${lastDurationMs}ms`}{" "}
-                  (client)
+                  {apiProvider ? (
+                    <span
+                      title={`เวลาการตอบกลับจาก API ของ ${apiProvider === "megallm" ? "megallm" : apiProvider === "novita" ? "novita" : apiProvider}`}
+                    >
+                      (
+                      {apiProvider === "megallm"
+                        ? "megallm"
+                        : apiProvider === "novita"
+                          ? "novita"
+                          : apiProvider}{" "}
+                      API)
+                    </span>
+                  ) : (
+                    "(client)"
+                  )}
                 </span>
               )}
             </div>
