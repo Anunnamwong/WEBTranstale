@@ -10,10 +10,9 @@ import {
   CurrencyDollarIcon,
   ShoppingBagIcon,
 } from "@heroicons/react/24/outline";
+import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import React, { useEffect, useRef, useState } from "react";
-
-import { logout } from "@/services/logoutServices";
 
 interface NavItem {
   name: string;
@@ -40,6 +39,7 @@ const navigation: NavItem[] = [
 
 const UserSidebar = () => {
   const router = useRouter();
+  const { data: session } = useSession();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -53,11 +53,10 @@ const UserSidebar = () => {
   };
 
   const confirmLogout = async () => {
-    const response = await logout();
-    if (response.success) {
-      localStorage.removeItem("token");
-      router.push("/login");
-    }
+    await signOut({ 
+      callbackUrl: '/login-zitadel',
+      redirect: true 
+    });
     setShowLogoutModal(false);
   };
 
@@ -73,32 +72,17 @@ const UserSidebar = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // สร้างฟังก์ชันสำหรับดึงตัวอักษรแรกของชือ
+  // สร้างฟังก์ชันสำหรับดึงตัวอักษรแรกของชื่อ
   const getInitials = () => {
-    try {
-      const profileData = sessionStorage.getItem("userData");
-      if (profileData) {
-        const profile = JSON.parse(profileData);
-        return profile.name ? profile.name.charAt(0).toUpperCase() : "?";
-      }
-      return "?";
-    } catch {
-      return "?";
+    if (session?.user?.name) {
+      return session.user.name.charAt(0).toUpperCase();
     }
+    return "?";
   };
 
-  // แก้ไขฟังก์ชัน getName ให้ดึงจาก 'userData'
+  // แก้ไขฟังก์ชัน getName ให้ดึงจาก NextAuth session
   const getName = () => {
-    try {
-      const profileData = sessionStorage.getItem("userData");
-      if (profileData) {
-        const profile = JSON.parse(profileData);
-        return profile.name || "Loading...";
-      }
-      return "Loading...";
-    } catch {
-      return "Loading...";
-    }
+    return session?.user?.name || session?.user?.email || "Loading...";
   };
 
   // Update click outside handler

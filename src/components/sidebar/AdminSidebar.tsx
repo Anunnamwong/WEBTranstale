@@ -9,10 +9,9 @@ import {
   PuzzlePieceIcon,
   DocumentCurrencyBangladeshiIcon,
 } from "@heroicons/react/24/outline";
+import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import React, { useEffect, useRef, useState } from "react";
-
-import { logout } from "@/services/logoutServices";
 
 interface NavItem {
   name: string;
@@ -51,18 +50,11 @@ const navigation: NavItem[] = [
   // { name: 'Add User', icon: UserPlusIcon, path: '/admin/adduser' },
 ];
 
-interface AdminUser {
-  id: number;
-  username: string;
-  name: string;
-  role: string;
-}
-
 const AdminSidebar = () => {
   const router = useRouter();
+  const { data: session } = useSession();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [adminProfile, setAdminProfile] = useState<AdminUser | null>(null);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -72,31 +64,12 @@ const AdminSidebar = () => {
   };
 
   const confirmLogout = async () => {
-    const response = await logout();
-    if (response.success) {
-      localStorage.removeItem("token");
-      router.push("/login");
-    }
+    await signOut({ 
+      callbackUrl: '/login-zitadel',
+      redirect: true 
+    });
     setShowLogoutModal(false);
   };
-
-  useEffect(() => {
-    const fetchAdminProfile = () => {
-      try {
-        const profileData = sessionStorage.getItem("userData");
-        if (profileData) {
-          const profile = JSON.parse(profileData);
-          setAdminProfile(profile);
-        }
-      } catch (error) {
-        console.error(
-          "Failed to fetch user profile from session storage:",
-          error
-        );
-      }
-    };
-    fetchAdminProfile();
-  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -123,8 +96,15 @@ const AdminSidebar = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const getInitials = (name: string) => {
-    return name ? name.charAt(0).toUpperCase() : "?";
+  const getInitials = () => {
+    if (session?.user?.name) {
+      return session.user.name.charAt(0).toUpperCase();
+    }
+    return "?";
+  };
+
+  const getName = () => {
+    return session?.user?.name || session?.user?.email || "Loading...";
   };
 
   return (
@@ -199,10 +179,10 @@ const AdminSidebar = () => {
                 bg-gradient-to-br from-slate-400 to-slate-600 
                 flex items-center justify-center text-sm font-bold text-white"
               >
-                {getInitials(adminProfile?.name || "")}
+                {getInitials()}
               </div>
               <span className="hidden sm:inline text-sm font-medium group-hover:text-emerald-300">
-                {adminProfile?.name || "Loading..."}
+                {getName()}
               </span>
             </button>
 

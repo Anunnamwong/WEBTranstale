@@ -10,6 +10,8 @@ import UserLayout from 'layout/UserLayout';
 import { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import { SessionProvider } from 'next-auth/react';
+import { getSession } from 'next-auth/react';
 import React from 'react';
 import { Toaster } from 'react-hot-toast';
 import pageTitles from '@/config/pageTitles';
@@ -47,13 +49,18 @@ function MyApp({ Component, pageProps }: AppProps) {
       </Head>
       <QueryClientProvider client={queryClient}>
         <Toaster position="top-center" />
-        <AuthProvider>
-          <main>
-            <LayoutComponent>
-              <Component {...pageProps} />
-            </LayoutComponent>
-          </main>
-        </AuthProvider>
+        <SessionProvider 
+          session={pageProps.session}
+          basePath="/api/auth"
+        >
+          <AuthProvider>
+            <main>
+              <LayoutComponent>
+                <Component {...pageProps} />
+              </LayoutComponent>
+            </main>
+          </AuthProvider>
+        </SessionProvider>
       </QueryClientProvider>
     </>
   );
