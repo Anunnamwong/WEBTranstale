@@ -1,12 +1,7 @@
 import { GetServerSideProps } from 'next';
 import { getSession } from 'next-auth/react';
 import React from 'react';
-import dynamic from 'next/dynamic';
-
-const DynamicZitadelLoginButton = dynamic(
-  () => import('@/components/login/ZitadelLoginButton'),
-  { ssr: false }
-);
+import ZitadelLoginButton from '@/components/login/ZitadelLoginButton';
 
 interface LoginZitadelProps {
   session: any;
@@ -25,7 +20,7 @@ const LoginZitadel: React.FC<LoginZitadelProps> = ({ nextAuthUrl, zitadelIssuer 
           <p className="text-center text-gray-600 mb-8">
             ใช้ NextAuth.js กับ Zitadel Provider
           </p>
-          <DynamicZitadelLoginButton />
+          <ZitadelLoginButton />
         </div>
 
         <div className="mt-6 bg-white p-6 rounded-xl shadow-lg border border-blue-200">

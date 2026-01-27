@@ -10,7 +10,7 @@ const ZitadelLoginButton: React.FC = () => {
   const handleSignIn = async () => {
     try {
       await signIn('zitadel', {
-        callbackUrl: '/login-zitadel',
+        callbackUrl: '/home',
         redirect: true,
       });
     } catch (error) {
