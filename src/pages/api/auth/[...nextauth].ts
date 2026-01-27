@@ -50,7 +50,6 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: '/login-zitadel',
-    error: '/login-zitadel',
   },
   session: {
     strategy: 'jwt',
