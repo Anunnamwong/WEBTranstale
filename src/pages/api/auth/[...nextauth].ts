@@ -7,7 +7,7 @@ console.log('[NextAuth] Loading auth configuration...');
 export const authOptions: NextAuthOptions = {
   providers: [
     ZitadelProvider({
-      issuer: process.env.ZITADEL_ISSUER || 'http://auth.94.232.251.252.sslip.io:8080',
+      issuer: process.env.ZITADEL_ISSUER || 'https://webtalk.one',
       clientId: process.env.ZITADEL_CLIENT_ID || '',
       clientSecret: process.env.ZITADEL_CLIENT_SECRET || '',
       authorization: {

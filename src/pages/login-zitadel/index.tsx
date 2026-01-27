@@ -73,7 +73,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     props: {
       session,
       nextAuthUrl: process.env.NEXTAUTH_URL || 'http://localhost:3000',
-      zitadelIssuer: process.env.ZITADEL_ISSUER || 'http://auth.94.232.251.252.sslip.io:8080',
+      zitadelIssuer: process.env.ZITADEL_ISSUER || 'https://webtalk.one',
     },
   };
 };
